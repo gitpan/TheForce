@@ -1,5 +1,5 @@
 ---
-abstract: 'Use the force!'
+abstract: 'Midichlorian-free Perl5 OOP'
 author:
   - 'Brad Haywood <brad@geeksware.net>'
   - 'Brad Haywood <brad@geeksware.net>'
@@ -22,4 +22,4 @@ no_index:
     - t
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.001
+version: 0.002
