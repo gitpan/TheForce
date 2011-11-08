@@ -10,7 +10,7 @@ It's in the NAME
 
 =cut
 
-$TheForce::Object::VERSION = '0.002';
+$TheForce::Object::VERSION = '0.003';
 
 sub new {
     my ($class, %args) = @_;

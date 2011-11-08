@@ -8,7 +8,7 @@ TheForce - Midichlorian-free Perl5 OOP
 
 L<Moose> and L<Mouse> are great. But how do they work? Normally people don't really care - they just work. 
 TheForce is an extremely limited version which only supports C<has> and C<extends> at the moment, but still 
-makes OOP in Perl5 extremely easy. What's best is everything is containing in just 3 small modules so you can 
+makes OOP in Perl5 extremely easy. What's best is everything is contained in just 3 small modules so you can 
 see what is happening in the background, if you're interested. What's best is you get to B<use TheForce> in every 
 package ;-)
 
@@ -45,9 +45,8 @@ package ;-)
 
 =cut
 
-$TheForce::VERSION = '0.002';
+$TheForce::VERSION = '0.003';
 
-use strict;
 use warnings;
 
 use TheForce::Jedi;
@@ -67,6 +66,9 @@ sub import {
     use warnings FATAL => 'uninitialized';
     *{$class_name . '::has'} = \&has;
     *{$class_name . '::extends'} = \&extends;
+    *{$class_name . '::after'} = \&after;
+    *{$class_name . '::force'} = \&force;
+    *{$class_name . '::force_pull'} = \&force_pull;
 }
 
 
@@ -144,7 +146,6 @@ sub has {
             $TheForce::Jedi::Classes->{$pkg}->{accessors}->{$key}->{value} = $val
                 unless $warn > 0;
         };
-        #bless \*$key, "$pkg";
         *{$pkg . "::$key"} = \*$key;
     }
 }
@@ -157,6 +158,55 @@ sub extends {
         if $pkg eq 'main';
 
     _extends_class( \@classes, $pkg);
+}
+
+# FIXME - Nothing here yet.
+sub after {
+    my (%name) = @_;
+    my $pkg = caller;
+   
+    my $alter_sub;
+    my $new_code;
+    my $old_code; 
+    foreach my $code (keys %name) {
+        die "Could not find $code in the Jedi hierarchy for $pkg\n"
+            if ! $pkg->can($code);
+    }
+}
+
+sub force {
+    my ($package, %args) = @_;
+    my $pkg = scalar $package;
+    die "Could not find '$pkg' in the Jedi Order (Did you use or extend this class?)\n" 
+        if ! $package->can('force');
+    my $key;
+    for $key (keys %args) {
+        *$key = sub {
+            $args{$key}->($package);
+        };
+        *{$package . "::$key"} = \*$key;
+    }
+}
+
+sub force_pull {
+    my $class = shift;
+
+    use Module::Finder;
+    my $class_d = $class;
+    $class_d =~ s/::/\-/g;
+    $class_d = "$class_d/lib/";
+    my $mf = Module::Finder->new(
+        dirs  => [@INC],
+        paths => {
+            $class => '/',
+        }
+    );
+    my @modnames = $mf->modules;
+    my $usem = "";
+    for(@modnames) {
+        $usem .= "use $_;\n";
+    }
+    eval $usem;
 }
 
 =head1 METHODS
@@ -182,6 +232,53 @@ Inherits the specified class.
 
     1;
 
+=head2 force
+
+Use the Force to push a subroutine into a class.
+
+    package JediPackage;
+    
+    use TheForce;
+
+    has ( green => { is => 'ro', isa => 'Str', default => 'Yoda is green!' } );
+
+    package SithLord;
+    
+    use TheForce;
+    
+    extends 'JediPackage';
+
+    JediPackage->force( yoda => sub {
+        my $self = shift;
+        
+        say $self->green;
+    });
+
+    my $jedi = JediPackage->new;
+    $jedi->yoda;
+
+=head2 force_pull
+
+Force pulls all the classes within the calling namespace.
+
+    package Jedi::Yoda;
+    
+    use TheForce;
+ 
+    has ( yoda => { isa => 'Str', default => 'Inherited, am I' } );
+
+    package Jedi::Obi;
+
+    use TheForce;
+    
+    package Jedi;
+
+    use TheForce;
+
+    __PACKAGE__->force_pull; # inherits Jedi::Yoda and Jedi::Obi
+    
+    say Jedi::Yoda->yoda;    
+
 =head1 AUTHOR
 
 Brad Haywood <brad@geeksware.net>
@@ -189,8 +286,6 @@ Brad Haywood <brad@geeksware.net>
 =head1 LICENSE
 
 You may distribute this code under the same terms as Perl itself.
-
-=cut
 
 =cut
 
