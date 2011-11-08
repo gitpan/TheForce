@@ -1,6 +1,6 @@
 package TheForce::Jedi;
 
-$TheForce::Jedi::VERSION = '0.004';
+$TheForce::Jedi::VERSION = '0.005';
 =head1 NAME
 
 TheForce::Jedi - The "Meta" Class for L<TheForce>

@@ -6,11 +6,10 @@ TheForce - Midichlorian-free Perl5 OOP
 
 =head1 DESCRIPTION
 
-L<Moose> and L<Mouse> are great. But how do they work? Normally people don't really care - they just work. 
-TheForce is an extremely limited version which only supports C<has> and C<extends> at the moment, but still 
-makes OOP in Perl5 extremely easy. What's best is everything is contained in just 3 small modules so you can 
-see what is happening in the background, if you're interested. What's best is you get to B<use TheForce> in every 
-package ;-)
+TheForce is an extremely limited YAOOPF (Yet Another OOP Framework) to make the code easy to understand without jumping through many different classes and subroutines, 
+but still makes OOP in Perl5 extremely easy. Everything is contained in just 3 small modules and runs very fast. 
+What's best is you get to B<use TheForce> in every package ;-)
+TheForce was B<not> made to replace other OOP frameworks like Mo(o|u)se (or disappoint by being a YAOOPF), but as a learning exercise. And I like Star Wars.
 
 =head1 SYNOPSIS
 
@@ -45,7 +44,7 @@ package ;-)
 
 =cut
 
-$TheForce::VERSION = '0.004';
+$TheForce::VERSION = '0.005';
 
 use warnings;
 
@@ -67,6 +66,7 @@ sub import {
     *{$class_name . '::has'} = \&has;
     *{$class_name . '::extends'} = \&extends;
     *{$class_name . '::after'} = \&after;
+    *{$class_name . '::before'} = \&before;
     *{$class_name . '::force'} = \&force;
     *{$class_name . '::force_pull'} = \&force_pull;
 }
@@ -157,18 +157,43 @@ sub extends {
     _extends_class( \@classes, $pkg);
 }
 
-# FIXME - Nothing here yet.
+# FIXME - This is hellishly ugly and not the right way to do this!
 sub after {
-    my (%name) = @_;
+    my ($name, $code) = @_;
     my $pkg = caller;
    
     my $alter_sub;
     my $new_code;
     my $old_code; 
-    foreach my $code (keys %name) {
-        die "Could not find $code in the Jedi hierarchy for $pkg\n"
-            if ! $pkg->can($code);
-    }
+    die "Could not find $name in the Jedi hierarchy for $pkg\n"
+        if ! $pkg->can($name);
+
+    $old_code = \&{$pkg . "::$name"};
+    *$name = sub {
+        $old_code->(@_);
+        $code->(@_);
+    };
+    *{$pkg . "::$name"} = \*$name;
+}
+
+
+# FIXME - Ditto
+sub before {
+    my ($name, $code) = @_;
+    my $pkg = caller;
+
+    my $alter_sub;
+    my $new_code;
+    my $old_code;
+    die "Could not find $name in the Jedi hierarchy for $pkg\n"
+        if ! $pkg->can($name);
+
+    $old_code = \&{$pkg . "::$name"};
+    *$name = sub {
+        $code->(@_);
+        $old_code->(@_);
+    };
+    *{$pkg . "::$name"} = \*$name;
 }
 
 sub force {
@@ -179,7 +204,7 @@ sub force {
     my $key;
     for $key (keys %args) {
         *$key = sub {
-            $args{$key}->($package);
+            $args{$key}->(@_);
         };
         *{$package . "::$key"} = \*$key;
     }
@@ -272,6 +297,26 @@ Force pulls all the classes within the calling namespace.
     __PACKAGE__->force_pull; # inherits Jedi::Yoda and Jedi::Obi
     
     say Jedi::Yoda->yoda;    
+
+=head2 before
+
+Alters the subroutine to call the specified subroutine _before_ whatever is currently already set.
+
+    sub greet {
+        say "Hello!";
+    }
+
+    before 'greet' => sub {
+        say "I'm going to say hello...";
+    }
+
+    # when greet is called it outputs:
+    # I'm going to say hello...
+    # Hello!
+
+=head2 after
+
+The same as C<before> but runs the new code _after_ the old subroutine code
 
 =head1 AUTHOR
 
