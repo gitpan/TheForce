@@ -19,8 +19,8 @@ package ;-)
 
     use TheForce;
 
-    has ( x => { is => 'rw', isa => 'Int', default => 5 } );
-    has ( greet => { is => 'ro', isa => 'Str', default => 'Hello, World!' } );    
+    has 'x' => ( is => 'rw', isa => 'Int', default => 5 );
+    has 'greet' => ( is => 'ro', isa => 'Str', default => 'Hello, World!' );    
 
     sub sayHello {
         my $self = shift;
@@ -45,7 +45,7 @@ package ;-)
 
 =cut
 
-$TheForce::VERSION = '0.003';
+$TheForce::VERSION = '0.004';
 
 use warnings;
 
@@ -94,60 +94,57 @@ sub _extends_class {
 }
 
 sub has {
-    my %args = @_;
+    my ($name, %opts) = @_;
     my $pkg = caller();
     my @types = qw/Str Int Def/;
     no strict 'refs';
     no warnings 'redefine', 'prototype';
-    my $key;
+    my $key = $name;
     my $accessor;
-    for (keys %args) {
-        $key = $_;
-        for my $opt (keys %{$args{$key}}) {
-            if ($opt eq 'isa') {
-                if (! grep { $_ eq $args{$key}->{isa} } @types) {
-                  die "$args{$key}->{isa} is not a valid attribute type\n";
-                }
-            }
-            $TheForce::Jedi::Classes->{$pkg}->{accessors}->{$key} = $args{$key};
-            if ($opt eq 'default') {
-                $TheForce::Jedi::Classes->{$pkg}->{accessors}->{$key}->{value} = $args{$key}->{default};
+    for my $opt (keys %opts) {
+        if ($opt eq 'isa') {
+            if (! grep { $_ eq $opts{isa} } @types) {
+              die "$opts{isa} is not a valid attribute type\n";
             }
         }
-        *$key = sub {
-            my ($self, $val) = @_;
-            
-            $accessor = $TheForce::Jedi::Classes->{$pkg}->{accessors}->{$key};
-            return $TheForce::Jedi::Classes->{$pkg}->{accessors}->{$key}->{value}
-                if ! $val;
-
-            my $warn = 0;
-            if (exists $accessor->{is}) {
-                if ($accessor->{is} eq 'ro') {
-                    $warn = 1;
-                    warn "Cannot alter a Read-Only attribute";
-                }
-            }
-            if (exists $accessor->{isa}) {
-                if ($accessor->{isa} eq 'Int') {
-                    if ($val !~ /^\d+$/) {
-                        $warn = 1;
-                        warn "$key(): Attribute type is 'Int', but value is not an integer";
-                    }
-                }
-                # FIXME
-                elsif ($accessor->{isa} eq 'Str') {
-                    if ($val =~ /^\d+$/) {
-                        $warn = 1;
-                        warn "$key(): Attribute type is 'Str', but value is not a string";
-                    }
-                }
-            }
-            $TheForce::Jedi::Classes->{$pkg}->{accessors}->{$key}->{value} = $val
-                unless $warn > 0;
-        };
-        *{$pkg . "::$key"} = \*$key;
+        $TheForce::Jedi::Classes->{$pkg}->{accessors}->{$name}->{$opt} = $opts{$opt};
+        if ($opt eq 'default') {
+            $TheForce::Jedi::Classes->{$pkg}->{accessors}->{$name}->{value} = $opts{default};
+        }
     }
+    *$key = sub {
+        my ($self, $val) = @_;
+
+        $accessor = $TheForce::Jedi::Classes->{$pkg}->{accessors}->{$key};
+        return $TheForce::Jedi::Classes->{$pkg}->{accessors}->{$key}->{value}
+            if ! $val;
+
+        my $warn = 0;
+        if (exists $accessor->{is}) {
+            if ($accessor->{is} eq 'ro') {
+                $warn = 1;
+                warn "Cannot alter a Read-Only attribute";
+            }
+        }
+        if (exists $accessor->{isa}) {
+            if ($accessor->{isa} eq 'Int') {
+                if ($val !~ /^\d+$/) {
+                    $warn = 1;
+                    warn "$key(): Attribute type is 'Int', but value is not an integer";
+                }
+            }
+            # FIXME
+            elsif ($accessor->{isa} eq 'Str') {
+                if ($val =~ /^\d+$/) {
+                    $warn = 1;
+                    warn "$key(): Attribute type is 'Str', but value is not a string";
+                }
+            }
+        }
+        $TheForce::Jedi::Classes->{$pkg}->{accessors}->{$key}->{value} = $val
+            unless $warn > 0;
+     };
+    *{$pkg . "::$key"} = \*$key;
 }
 
 sub extends {
@@ -192,9 +189,6 @@ sub force_pull {
     my $class = shift;
 
     use Module::Finder;
-    my $class_d = $class;
-    $class_d =~ s/::/\-/g;
-    $class_d = "$class_d/lib/";
     my $mf = Module::Finder->new(
         dirs  => [@INC],
         paths => {
@@ -216,11 +210,11 @@ sub force_pull {
 Creates an accessor for the particular package. Without arguments will return its value, 
 or with arguments will set a new value. You can make the accessor read-only and set a specific type.
 
-    has (x => {
+    has 'x' => (
         is      => 'ro',   # read only
         isa     => 'Int',  # Integer only
         default => 7,      # default value
-    });
+    );
 
 =head2 extends
 
@@ -265,7 +259,7 @@ Force pulls all the classes within the calling namespace.
     
     use TheForce;
  
-    has ( yoda => { isa => 'Str', default => 'Inherited, am I' } );
+    has 'yoda' => ( isa => 'Str', default => 'Inherited, am I' );
 
     package Jedi::Obi;
 
