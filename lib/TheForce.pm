@@ -39,12 +39,19 @@ TheForce was B<not> made to replace other OOP frameworks like Mo(o|u)se (or disa
     Foo->x(7);
     say Foo->x; # prints 7
 
-    my $foo = Foo->new;
-    $foo->sayHello(); # prints Hello, World!
+    after 'sayHello' => sub {
+        my $self = shift;
+
+        say "Goodbye, World!";
+    };
+   
+     my $foo = Foo->new;
+   
+    $foo->sayHello; # prints Hello, World! Goodbye, World!
 
 =cut
 
-$TheForce::VERSION = '0.005';
+$TheForce::VERSION = '0.006';
 
 use warnings;
 
@@ -96,7 +103,7 @@ sub _extends_class {
 sub has {
     my ($name, %opts) = @_;
     my $pkg = caller();
-    my @types = qw/Str Int Def/;
+    my @types = qw/Str Int Def Droid/;
     no strict 'refs';
     no warnings 'redefine', 'prototype';
     my $key = $name;
