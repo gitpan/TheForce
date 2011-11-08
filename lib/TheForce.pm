@@ -51,7 +51,7 @@ TheForce was B<not> made to replace other OOP frameworks like Mo(o|u)se (or disa
 
 =cut
 
-$TheForce::VERSION = '0.006';
+$TheForce::VERSION = '0.007';
 
 use warnings;
 
@@ -76,6 +76,7 @@ sub import {
     *{$class_name . '::before'} = \&before;
     *{$class_name . '::force'} = \&force;
     *{$class_name . '::force_pull'} = \&force_pull;
+    *{$class_name . '::jedi_vision'} = \&jedi_vision;
 }
 
 
@@ -235,6 +236,15 @@ sub force_pull {
     eval $usem;
 }
 
+sub jedi_vision {
+    my @classes;
+    for (keys %{$TheForce::Jedi::Classes}) {
+        push @classes, $_;
+    }
+
+    return @classes;
+}
+
 =head1 METHODS
 
 =head2 has
@@ -307,7 +317,8 @@ Force pulls all the classes within the calling namespace.
 
 =head2 before
 
-Alters the subroutine to call the specified subroutine _before_ whatever is currently already set.
+Alters the subroutine to call the specified subroutine _before_ whatever is currently already set. 
+The "before" subroutine inherits any arguments the original one had also.
 
     sub greet {
         say "Hello!";
@@ -324,6 +335,21 @@ Alters the subroutine to call the specified subroutine _before_ whatever is curr
 =head2 after
 
 The same as C<before> but runs the new code _after_ the old subroutine code
+
+=head2 jedi_vision
+
+Returns an array of all the classes available to the current class. Can be used to make sure things have loaded OK.
+
+    use TheForce;
+
+    for (jedi_vision) { say $_; } # iterate through the classes
+
+    # check if a class exists
+    if (grep { $_ eq 'Jedi::Guardian' } jedi_vision) { say "Jedi Guardian Loaded"; }
+    else {
+        say "Not loaded. Loading...";
+        extends 'Jedi::Guardian';
+    }
 
 =head1 AUTHOR
 

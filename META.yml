@@ -24,4 +24,4 @@ requires:
   Module::Finder: 0
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.006
+version: 0.007
